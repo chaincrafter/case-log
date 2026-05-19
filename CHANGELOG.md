@@ -17,7 +17,13 @@ All notable changes to this project are documented here.
 - `create-user` command for additional web users
 - Multiple database-backed cases with separate event views
 - Case membership access control for regular users
-- `grant-user` command for assigning users to cases
+- Case membership commands for assigning users to cases
+- Modular `case_log_webapp/` package for web server, database, models, crypto and views
+- First-run browser setup for the first organization and system admin PIN
+- Organization management with organization-level roles
+- User profiles with display names, avatar URLs, titles, bios and badges
+- 4-digit PIN login support for the web interface
+- `grant-org`, `grant-case` and `set-pin` web CLI commands
 - PBKDF2-HMAC-SHA-256 password hashing for web users
 - HMAC-signed web session cookies
 - HMAC-signed web event chain and audit log
@@ -33,6 +39,7 @@ All notable changes to this project are documented here.
 - Existing sample events were migrated to schema version 2
 - Markdown export now includes sequence numbers, Unix time, recorded-at time and event hashes
 - README was reorganized around CLI usage, web usage, evidence workflow and security
+- `case_log_web.py` is now a small entrypoint for the modular web package
 
 ## v0.1.0 - 2026-05-19
 

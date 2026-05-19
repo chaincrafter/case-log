@@ -4,7 +4,8 @@
 
 It supports append-only chronological event documentation, local integrity
 verification, HMAC signatures, evidence reports and a local multi-user SQLite web
-interface with a dark terminal-style design.
+interface with organizations, roles, user profiles, badges and a dark
+terminal-style design.
 
 ## Scope
 
@@ -27,8 +28,11 @@ a qualified external timestamp/signature process.
 - Generate evidence reports with a case root hash
 - Export Markdown chronologies
 - Run a local multi-user SQLite web interface
+- First-run web setup for the first organization and admin PIN
+- Manage multiple organizations
 - Create multiple cases with separate entries
-- Grant users access to individual cases
+- Grant users organization and case roles
+- Maintain user profiles with avatar URLs, titles and badges
 - Track web actions in an HMAC-signed audit log
 
 ## Requirements
@@ -45,6 +49,15 @@ case-log/
   SECURITY.md
   case_log.py
   case_log_web.py
+  case_log_webapp/
+    bootstrap.py
+    cli.py
+    config.py
+    crypto.py
+    db.py
+    models.py
+    server.py
+    views.py
   data/
     events.json
   examples/
@@ -98,31 +111,16 @@ python case_log.py export-md --output chronology.md
 
 ## Web Interface
 
-The local web interface uses Python's standard library and SQLite. It supports
-multiple users, PBKDF2 password hashes, HMAC-signed session cookies, append-only
-events, HMAC-signed event hashes and an HMAC-signed audit log.
-Events are organized into cases. Admin users can see every case; regular users
-only see cases they are explicitly assigned to.
+The local web interface uses Python's standard library and SQLite. It is split
+into modules under `case_log_webapp/` so the server, models, database, crypto
+and views can be edited separately.
 
-Initialize the database and first admin user:
+Events are organized by organization and case. System admins can manage
+organizations. Organization owners/admins can manage users and cases inside
+their organization. Regular users only see organizations and cases they are
+assigned to.
 
-```bash
-python case_log_web.py init-db --admin-user admin --admin-password "change-this-password"
-```
-
-Create another user:
-
-```bash
-python case_log_web.py create-user --username analyst --password "change-this-too" --role user
-```
-
-Grant a user access to a case:
-
-```bash
-python case_log_web.py grant-user --case-id 1 --username analyst --role member
-```
-
-Start the local server:
+Start the server and complete first-run setup in the browser:
 
 ```bash
 python case_log_web.py serve --host 127.0.0.1 --port 8000
@@ -131,7 +129,40 @@ python case_log_web.py serve --host 127.0.0.1 --port 8000
 Open:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:8000/setup
+```
+
+The setup page creates the first organization and a system admin with a
+4-digit PIN.
+
+Initialize from the CLI instead:
+
+```bash
+python case_log_web.py init-db --organization "Acme Investigations" --admin-user admin --admin-pin 1234
+```
+
+Create another user:
+
+```bash
+python case_log_web.py create-user --username analyst --pin 2345 --display-name "Case Analyst" --organization-id 1 --org-role analyst
+```
+
+Set or reset a user's PIN:
+
+```bash
+python case_log_web.py set-pin --username analyst --pin 3456
+```
+
+Grant organization access:
+
+```bash
+python case_log_web.py grant-org --organization-id 1 --username analyst --role analyst
+```
+
+Grant case access:
+
+```bash
+python case_log_web.py grant-case --case-id 1 --username analyst --role member
 ```
 
 ## Data Format
@@ -175,6 +206,7 @@ values. The signing key is read from `CASE_LOG_HMAC_KEY` or from
 The web interface includes:
 
 - Per-case access control through case memberships
+- Per-organization access control through organization memberships
 - PBKDF2-HMAC-SHA-256 password hashing
 - HMAC-signed session cookies
 - CSRF tokens for event creation
@@ -182,6 +214,27 @@ The web interface includes:
 - Security headers for content type, framing, referrer handling and caching
 - Request body size limits and form field length limits
 - Append-only event records and append-only audit records
+
+## Web Roles
+
+System roles:
+
+- `system_admin`: can create and manage organizations
+- `user`: can work inside assigned organizations
+
+Organization roles:
+
+- `owner`: full organization control
+- `admin`: user and case management
+- `case_manager`: case management and entries
+- `analyst`: create entries in accessible cases
+- `viewer`: read-only organization access
+
+Case roles:
+
+- `owner`
+- `member`
+- `viewer`
 
 For sensitive use, bind the server to `127.0.0.1`, use a strong HMAC key, keep
 `data/.case-log-hmac-key` private, restrict filesystem access to `data/`, and

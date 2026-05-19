@@ -29,7 +29,8 @@ For sensitive use:
 
 - Bind the app to `127.0.0.1` unless it is behind a hardened reverse proxy
 - Use HTTPS before exposing the app to any network
-- Use strong passwords with at least 12 characters
+- Treat the current 4-digit PIN mode as local-only convenience, not public-facing authentication
+- Use organization roles conservatively and grant only the minimum required rights
 - Grant regular users access only to the cases they need
 - Keep the SQLite database and HMAC key out of Git
 - Back up `data/events.json`, `data/*.sqlite3`, exports and the HMAC key
@@ -42,6 +43,7 @@ For sensitive use:
 - HMAC-SHA-256 signatures
 - PBKDF2-HMAC-SHA-256 password hashing for web users
 - HMAC-signed session cookies
+- Organization-level role management
 - Per-case access control through case memberships
 - CSRF token checks for event creation
 - Login rate limiting
@@ -56,6 +58,8 @@ For sensitive use:
 - SQLite file permissions depend on the host operating system
 - The web server is intentionally minimal and should not be exposed directly to
   the public internet
+- Four-digit PINs are intentionally easy to use but weak against online guessing
+  without strict deployment controls
 - Court acceptance depends on jurisdiction, procedure, chain of custody and
   external validation
 
