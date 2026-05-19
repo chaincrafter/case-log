@@ -1,0 +1,63 @@
+# Security
+
+`case-log` is built for local forensic documentation and tamper detection. It
+can support chain-of-custody workflows, but it does not replace qualified
+electronic timestamps, qualified electronic signatures, qualified seals or legal
+review.
+
+## Local Secrets
+
+Keep this file private and backed up securely:
+
+```text
+data/.case-log-hmac-key
+```
+
+Anyone with write access to the event data and the HMAC key can recalculate
+valid signatures. Restrict filesystem access to the project directory,
+especially `data/`.
+
+You can also provide the key through:
+
+```text
+CASE_LOG_HMAC_KEY
+```
+
+## Web Deployment
+
+For sensitive use:
+
+- Bind the app to `127.0.0.1` unless it is behind a hardened reverse proxy
+- Use HTTPS before exposing the app to any network
+- Use strong passwords with at least 12 characters
+- Grant regular users access only to the cases they need
+- Keep the SQLite database and HMAC key out of Git
+- Back up `data/events.json`, `data/*.sqlite3`, exports and the HMAC key
+- Preserve generated evidence reports and case root hashes
+- Verify regularly with `python case_log.py verify --require-signatures`
+
+## Built-In Protections
+
+- SHA-256 event hash chain
+- HMAC-SHA-256 signatures
+- PBKDF2-HMAC-SHA-256 password hashing for web users
+- HMAC-signed session cookies
+- Per-case access control through case memberships
+- CSRF token checks for event creation
+- Login rate limiting
+- Append-only event and audit records
+- Security headers for the web interface
+- Request body and form field limits
+
+## Known Limits
+
+- Local system time can be wrong or manipulated
+- Local HMAC signatures do not prove an external trusted time
+- SQLite file permissions depend on the host operating system
+- The web server is intentionally minimal and should not be exposed directly to
+  the public internet
+- Court acceptance depends on jurisdiction, procedure, chain of custody and
+  external validation
+
+For court-facing workflows, submit the case root hash or evidence report to an
+appropriate qualified timestamp/signature process outside this local tool.

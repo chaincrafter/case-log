@@ -1,32 +1,47 @@
 [
   {
-    "timestamp": "2026-05-19T06:25:12",
+    "timestamp": "2026-05-19T06:25:12+02:00",
     "title": "Initial consultation",
     "category": "administrative",
     "people": "Case worker, applicant",
     "note": "Basic facts and next steps were documented.",
     "previous_hash": "",
-    "hash": "31eb8dffe5386349fd12c266d8b34868b5aecf6f71202fd3cf7190947884f0fd",
-    "signature": "3315e259b8e60c82025516ab146281c1ee8cef2b1dda3fa96168e466791b32e6"
+    "hash": "da7294e9fe322de6f6e71e0b1fed9a75bcb41f459c9cb4180e47f92c347ff79f",
+    "signature": "bfa54fcc3786853a398f644d8c50ace6a6ec57b7f9cbdf589966d8654f05c0e2",
+    "schema_version": 2,
+    "sequence": 1,
+    "timestamp_unix": 1779164712,
+    "recorded_at": "2026-05-19T06:25:12+02:00",
+    "recorded_at_unix": 1779164712
   },
   {
-    "timestamp": "2026-05-19T06:25:20",
+    "timestamp": "2026-05-19T06:25:20+02:00",
     "title": "Medical appointment",
     "category": "medical",
     "people": "Doctor, client",
     "note": "Current condition was documented for the chronology.",
-    "previous_hash": "31eb8dffe5386349fd12c266d8b34868b5aecf6f71202fd3cf7190947884f0fd",
-    "hash": "b972e05f663a080733091a46b19a16671efa8948dedc2a6e7aeafaba4e4186ea",
-    "signature": "c10028d406b39c9674bc25ba1c65511cd45b11594fedfd7e27338b9e59eec756"
+    "previous_hash": "da7294e9fe322de6f6e71e0b1fed9a75bcb41f459c9cb4180e47f92c347ff79f",
+    "hash": "d0605d7cb11eb2205032c444b98803f61bbdac7058a19097a544cec95c6e377b",
+    "signature": "6750d480a4b6a18bb2fbf4eefcf51d4ce6f40a6d64183e2b9ba085c2016154ab",
+    "schema_version": 2,
+    "sequence": 2,
+    "timestamp_unix": 1779164720,
+    "recorded_at": "2026-05-19T06:25:20+02:00",
+    "recorded_at_unix": 1779164720
   },
   {
-    "timestamp": "2026-05-19T06:25:37",
+    "timestamp": "2026-05-19T06:25:37+02:00",
     "title": "Document review",
     "category": "legal",
     "people": "Applicant",
     "note": "Relevant documents were reviewed and added to the timeline.",
-    "previous_hash": "b972e05f663a080733091a46b19a16671efa8948dedc2a6e7aeafaba4e4186ea",
-    "hash": "91e8996fc60785cec2d0cd51b3be656242d0ee1c61ca781edd7350ed78f611a5",
-    "signature": "fbe42406b00ca9052de91ae8d0b4bdc0560d9f62a7a934ed5b9f618b4e5a95fa"
+    "previous_hash": "d0605d7cb11eb2205032c444b98803f61bbdac7058a19097a544cec95c6e377b",
+    "hash": "5c3b3d8a44afc50cb736cd6068dfa931c78a379d2828ebd5357af04d24e0dbfd",
+    "signature": "d0c650ccdc10d94e1cc5b3655df4abb677a151cbf76c55b8af1624426c3780a1",
+    "schema_version": 2,
+    "sequence": 3,
+    "timestamp_unix": 1779164737,
+    "recorded_at": "2026-05-19T06:25:37+02:00",
+    "recorded_at_unix": 1779164737
   }
 ]
