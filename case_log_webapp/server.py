@@ -333,18 +333,29 @@ class CaseLogHandler(BaseHTTPRequestHandler):
               <h2>Create Organization</h2>
               <form method="post" action="/organizations">
                 {csrf_input(user)}
-                <label>Name<input name="name" required></label>
-                <label>Bereich<select name="domain">{domain_options('foster_care')}</select></label>
-                <label>Description<textarea name="description"></textarea></label>
+                <div class="form-grid">
+                  <label>Name<input name="name" required></label>
+                  <label>Bereich<select name="domain">{domain_options('foster_care')}</select></label>
+                  <label class="wide">Description<textarea name="description"></textarea></label>
+                </div>
                 <button type="submit">Create organization</button>
               </form>
             </section>
             """
 
         body = f"""
-        <h1>Organizations</h1>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h1>Organizations</h1>
+            <p class="muted">Choose the working area for cases, users and evidence chains.</p>
+          </div>
+        </div>
         <div class="split">
-          <section><table><thead><tr><th>Name</th><th>Bereich</th><th>Description</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'>No organizations.</td></tr>"}</tbody></table></section>
+          <section class="table-panel">
+            <div class="table-panel-header"><div><h2>Available organizations</h2><p>{len(orgs)} organization(s)</p></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Name</th><th>Bereich</th><th>Description</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'><div class='empty-state'>No organizations.</div></td></tr>"}</tbody></table></div>
+          </section>
           {create_form}
         </div>
         """
@@ -393,8 +404,9 @@ class CaseLogHandler(BaseHTTPRequestHandler):
               <form method="post" action="/cases">
                 {csrf_input(user)}
                 <input type="hidden" name="organization_id" value="{org['id']}">
+                <div class="form-grid">
                 <label>Title<input name="title" required></label>
-                <label>Description<textarea name="description"></textarea></label>
+                <label class="wide">Description<textarea name="description"></textarea></label>
                 <label>Name / Kürzel des Kindes<input name="subject_name"></label>
                 <label>Geburtsdatum<input name="subject_birthdate" placeholder="YYYY-MM-DD"></label>
                 <label>Aktenzeichen / Fallnummer<input name="subject_identifier"></label>
@@ -403,16 +415,26 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 <label>Vormund / Ergänzungspflege<input name="guardian"></label>
                 <label>Gericht / Aktenzeichen<input name="court_reference"></label>
                 <label>Schule / Kita<input name="school_or_daycare"></label>
-                <label>Ärzte / Therapie<textarea name="medical_contacts"></textarea></label>
+                <label class="wide">Ärzte / Therapie<textarea name="medical_contacts"></textarea></label>
+                </div>
                 <button type="submit">Create case</button>
               </form>
             </section>
             """
 
         body = f"""
-        <h1>{esc(org['name'])} Cases</h1>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Cases</p>
+            <h1>{esc(org['name'])}</h1>
+            <p class="muted">Manage case files and open the chronology for documentation.</p>
+          </div>
+        </div>
         <div class="split">
-          <section><table><thead><tr><th>Case</th><th>Description</th><th>Jugendamt</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'>No cases.</td></tr>"}</tbody></table></section>
+          <section class="table-panel">
+            <div class="table-panel-header"><div><h2>Case files</h2><p>{len(cases)} case(s) in this organization</p></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Case</th><th>Description</th><th>Jugendamt</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'><div class='empty-state'>No cases yet.</div></td></tr>"}</tbody></table></div>
+          </section>
           {form_html}
         </div>
         """
@@ -478,7 +500,8 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 {csrf_input(user)}
                 <input type="hidden" name="organization_id" value="{org['id']}">
                 <input type="hidden" name="case_id" value="{case['id']}">
-                <label>Title<input name="title" required></label>
+                <div class="form-grid">
+                <label class="wide">Title<input name="title" required></label>
                 <label>Ereignistyp<select name="event_type">{event_type_options('general')}</select></label>
                 <label>Priorität<select name="priority">{priority_options('normal')}</select></label>
                 <label>Category<input name="category" value="general"></label>
@@ -489,22 +512,33 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 <label>Faktische Beobachtung<textarea name="observation"></textarea></label>
                 <label>Einschätzung<textarea name="assessment"></textarea></label>
                 <label>Maßnahme / nächster Schritt<textarea name="action_taken"></textarea></label>
-                <label>Note<textarea name="note" required></textarea></label>
+                <label class="wide">Note<textarea name="note" required></textarea></label>
+                </div>
                 <h2>Anhang mit Hash</h2>
+                <div class="form-grid">
                 <label>Dateiname<input name="attachment_name"></label>
                 <label>SHA-256<input name="attachment_sha256" maxlength="64"></label>
                 <label>Größe in Bytes<input name="attachment_size" inputmode="numeric"></label>
-                <label>Beschreibung<textarea name="attachment_description"></textarea></label>
+                <label class="wide">Beschreibung<textarea name="attachment_description"></textarea></label>
+                </div>
                 <button type="submit">Add entry</button>
               </form>
             </section>
             """
 
         body = f"""
-        <h1>{esc(case['title'])}</h1>
-        <p class="muted">{esc(org['name'])} / {esc(case['description'])}</p>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">{esc(org['name'])}</p>
+            <h1>{esc(case['title'])}</h1>
+            <p class="muted">{esc(case['description'])}</p>
+          </div>
+        </div>
         <div class="split">
-          <section><table><thead><tr><th>Seq</th><th>Time</th><th>Type</th><th>Entry</th><th>User</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='6'>No entries.</td></tr>"}</tbody></table></section>
+          <section class="table-panel">
+            <div class="table-panel-header"><div><h2>Chronology</h2><p>{len(events)} documented event(s)</p></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Seq</th><th>Time</th><th>Type</th><th>Entry</th><th>User</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='6'><div class='empty-state'>No entries yet.</div></td></tr>"}</tbody></table></div>
+          </section>
           {form_html}
         </div>
         """
@@ -565,27 +599,40 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             )
         case_options = "".join(f"<option value='{case['id']}'>{esc(case['title'])}</option>" for case in cases)
         body = f"""
-        <h1>User Management / {esc(org['name'])}</h1>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Access control</p>
+            <h1>User Management</h1>
+            <p class="muted">{esc(org['name'])}</p>
+          </div>
+        </div>
         <div class="split">
-          <section><table><thead><tr><th></th><th>User</th><th>System</th><th>Org role</th><th>Active</th></tr></thead><tbody>{user_rows}</tbody></table></section>
+          <section class="table-panel">
+            <div class="table-panel-header"><div><h2>People</h2><p>{len(users)} user(s)</p></div></div>
+            <div class="table-wrap"><table><thead><tr><th></th><th>User</th><th>System</th><th>Org role</th><th>Active</th></tr></thead><tbody>{user_rows}</tbody></table></div>
+          </section>
           <section class="panel">
             <h2>Create User</h2>
             <form method="post" action="/admin/users">
               {csrf_input(user)}
               <input type="hidden" name="organization_id" value="{org['id']}">
+              <div class="form-grid">
               <label>Username<input name="username" required></label>
               <label>Display name<input name="display_name"></label>
               <label>4-digit PIN<input name="pin" inputmode="numeric" maxlength="4" required></label>
               <label>Organization role<select name="org_role">{org_role_options('viewer')}</select></label>
+              </div>
               <button type="submit">Create user</button>
             </form>
             <h2>Grant Case Access</h2>
             <form method="post" action="/admin/grant-case">
               {csrf_input(user)}
               <input type="hidden" name="organization_id" value="{org['id']}">
+              <div class="form-grid">
               <label>Username<input name="username" required></label>
               <label>Case<select name="case_id">{case_options}</select></label>
               <label>Case role<select name="case_role">{case_role_options('member')}</select></label>
+              </div>
               <button type="submit">Grant case</button>
             </form>
           </section>
@@ -651,17 +698,25 @@ class CaseLogHandler(BaseHTTPRequestHandler):
 
         badge_html = "".join(f"<span class='badge'>{esc(badge['label'])}</span>" for badge in badges)
         body = f"""
-        <h1>Profile</h1>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Account</p>
+            <h1>Profile</h1>
+            <p class="muted">Update how your account appears in the case log.</p>
+          </div>
+        </div>
         <div class="split">
           <section class="panel">
             <p>{'<img class="avatar" src="' + esc(profile['avatar_url']) + '">' if profile and profile['avatar_url'] else ''}</p>
             <p>{badge_html or "<span class='muted'>No badges yet.</span>"}</p>
             <form method="post" action="/profile">
               {csrf_input(user)}
+              <div class="form-grid">
               <label>Display name<input name="display_name" value="{esc(profile['display_name'] if profile else '')}"></label>
               <label>Avatar URL<input name="avatar_url" value="{esc(profile['avatar_url'] if profile else '')}"></label>
-              <label>Title<input name="title" value="{esc(profile['title'] if profile else '')}"></label>
-              <label>Bio<textarea name="bio">{esc(profile['bio'] if profile else '')}</textarea></label>
+              <label class="wide">Title<input name="title" value="{esc(profile['title'] if profile else '')}"></label>
+              <label class="wide">Bio<textarea name="bio">{esc(profile['bio'] if profile else '')}</textarea></label>
+              </div>
               <button type="submit">Update profile</button>
             </form>
           </section>
@@ -704,7 +759,13 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             ) + "</ul>"
 
         body = f"""
-        <h1>Verify {esc(case['title'])}</h1>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Integrity</p>
+            <h1>Verify {esc(case['title'])}</h1>
+            <p class="muted">{esc(org['name'])}</p>
+          </div>
+        </div>
         <div class="panel">
           {status}
           <p>Event count: {len(events)}</p>
@@ -723,11 +784,20 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             for row in rows
         )
         body = f"""
-        <h1>Audit Log</h1>
-        <table>
-          <thead><tr><th>Seq</th><th>Recorded</th><th>Actor</th><th>Action</th><th>Object</th><th>Hash</th></tr></thead>
-          <tbody>{table_rows or "<tr><td colspan='6'>No audit entries yet.</td></tr>"}</tbody>
-        </table>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">System record</p>
+            <h1>Audit Log</h1>
+            <p class="muted">Latest signed administrative and user actions.</p>
+          </div>
+        </div>
+        <section class="table-panel">
+          <div class="table-panel-header"><div><h2>Recent actions</h2><p>Showing up to 200 entries</p></div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Seq</th><th>Recorded</th><th>Actor</th><th>Action</th><th>Object</th><th>Hash</th></tr></thead>
+            <tbody>{table_rows or "<tr><td colspan='6'><div class='empty-state'>No audit entries yet.</div></td></tr>"}</tbody>
+          </table></div>
+        </section>
         """
         self.send_html(HTTPStatus.OK, page("Audit", body, user, self.current_theme()))
 
