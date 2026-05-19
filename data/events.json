@@ -4,20 +4,29 @@
     "title": "Initial consultation",
     "category": "administrative",
     "people": "Case worker, applicant",
-    "note": "Basic facts and next steps were documented."
+    "note": "Basic facts and next steps were documented.",
+    "previous_hash": "",
+    "hash": "31eb8dffe5386349fd12c266d8b34868b5aecf6f71202fd3cf7190947884f0fd",
+    "signature": "3315e259b8e60c82025516ab146281c1ee8cef2b1dda3fa96168e466791b32e6"
   },
   {
     "timestamp": "2026-05-19T06:25:20",
     "title": "Medical appointment",
     "category": "medical",
     "people": "Doctor, client",
-    "note": "Current condition was documented for the chronology."
+    "note": "Current condition was documented for the chronology.",
+    "previous_hash": "31eb8dffe5386349fd12c266d8b34868b5aecf6f71202fd3cf7190947884f0fd",
+    "hash": "b972e05f663a080733091a46b19a16671efa8948dedc2a6e7aeafaba4e4186ea",
+    "signature": "c10028d406b39c9674bc25ba1c65511cd45b11594fedfd7e27338b9e59eec756"
   },
   {
     "timestamp": "2026-05-19T06:25:37",
     "title": "Document review",
     "category": "legal",
     "people": "Applicant",
-    "note": "Relevant documents were reviewed and added to the timeline."
+    "note": "Relevant documents were reviewed and added to the timeline.",
+    "previous_hash": "b972e05f663a080733091a46b19a16671efa8948dedc2a6e7aeafaba4e4186ea",
+    "hash": "91e8996fc60785cec2d0cd51b3be656242d0ee1c61ca781edd7350ed78f611a5",
+    "signature": "fbe42406b00ca9052de91ae8d0b4bdc0560d9f62a7a934ed5b9f618b4e5a95fa"
   }
 ]

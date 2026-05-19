@@ -3,5 +3,6 @@ __pycache__/
 .venv/
 chronology.md
 .env
+data/.case-log-hmac-key
 .DS_Store
 Thumbs.db
