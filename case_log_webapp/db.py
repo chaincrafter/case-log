@@ -54,6 +54,7 @@ def init_schema(connection):
         CREATE TABLE IF NOT EXISTS organizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
+            domain TEXT NOT NULL DEFAULT 'foster_care',
             description TEXT NOT NULL DEFAULT '',
             created_by TEXT NOT NULL,
             created_at TEXT NOT NULL,
@@ -97,6 +98,15 @@ def init_schema(connection):
             organization_id INTEGER NOT NULL DEFAULT 1,
             title TEXT NOT NULL,
             description TEXT NOT NULL DEFAULT '',
+            subject_name TEXT NOT NULL DEFAULT '',
+            subject_identifier TEXT NOT NULL DEFAULT '',
+            subject_birthdate TEXT NOT NULL DEFAULT '',
+            agency TEXT NOT NULL DEFAULT '',
+            case_worker TEXT NOT NULL DEFAULT '',
+            guardian TEXT NOT NULL DEFAULT '',
+            court_reference TEXT NOT NULL DEFAULT '',
+            school_or_daycare TEXT NOT NULL DEFAULT '',
+            medical_contacts TEXT NOT NULL DEFAULT '',
             created_by TEXT NOT NULL,
             created_at TEXT NOT NULL,
             created_at_unix INTEGER NOT NULL,
@@ -121,6 +131,8 @@ def init_schema(connection):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             organization_id INTEGER NOT NULL DEFAULT 1,
             case_id INTEGER NOT NULL DEFAULT 1,
+            event_type TEXT NOT NULL DEFAULT 'general',
+            priority TEXT NOT NULL DEFAULT 'normal',
             schema_version INTEGER NOT NULL,
             sequence INTEGER NOT NULL UNIQUE,
             timestamp TEXT NOT NULL,
@@ -130,6 +142,11 @@ def init_schema(connection):
             title TEXT NOT NULL,
             category TEXT NOT NULL,
             people TEXT NOT NULL DEFAULT '',
+            location TEXT NOT NULL DEFAULT '',
+            quote TEXT NOT NULL DEFAULT '',
+            observation TEXT NOT NULL DEFAULT '',
+            assessment TEXT NOT NULL DEFAULT '',
+            action_taken TEXT NOT NULL DEFAULT '',
             note TEXT NOT NULL,
             recorded_by TEXT NOT NULL,
             previous_hash TEXT NOT NULL,
@@ -153,6 +170,27 @@ def init_schema(connection):
             hash TEXT NOT NULL UNIQUE,
             signature TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            sha256 TEXT NOT NULL,
+            size_bytes INTEGER NOT NULL DEFAULT 0,
+            added_at TEXT NOT NULL,
+            added_at_unix INTEGER NOT NULL,
+            added_by TEXT NOT NULL,
+            FOREIGN KEY (event_id) REFERENCES events(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS event_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            prompt TEXT NOT NULL DEFAULT ''
+        );
         """
     )
     migrate_schema(connection)
@@ -163,9 +201,26 @@ def migrate_schema(connection):
     add_column(connection, "users", "system_role TEXT NOT NULL DEFAULT 'user'")
     add_column(connection, "users", "last_login_at TEXT NOT NULL DEFAULT ''")
     add_column(connection, "users", "last_login_at_unix INTEGER NOT NULL DEFAULT 0")
+    add_column(connection, "organizations", "domain TEXT NOT NULL DEFAULT 'foster_care'")
     add_column(connection, "cases", "organization_id INTEGER NOT NULL DEFAULT 1")
+    add_column(connection, "cases", "subject_name TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "subject_identifier TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "subject_birthdate TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "agency TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "case_worker TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "guardian TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "court_reference TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "school_or_daycare TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "cases", "medical_contacts TEXT NOT NULL DEFAULT ''")
     add_column(connection, "events", "organization_id INTEGER NOT NULL DEFAULT 1")
     add_column(connection, "events", "case_id INTEGER NOT NULL DEFAULT 1")
+    add_column(connection, "events", "event_type TEXT NOT NULL DEFAULT 'general'")
+    add_column(connection, "events", "priority TEXT NOT NULL DEFAULT 'normal'")
+    add_column(connection, "events", "location TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "events", "quote TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "events", "observation TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "events", "assessment TEXT NOT NULL DEFAULT ''")
+    add_column(connection, "events", "action_taken TEXT NOT NULL DEFAULT ''")
 
     connection.execute("UPDATE users SET system_role = 'system_admin' WHERE role = 'admin'")
     connection.execute("UPDATE users SET system_role = 'user' WHERE system_role = ''")
@@ -177,6 +232,7 @@ def migrate_schema(connection):
         )
 
     seed_badges(connection)
+    seed_templates(connection)
 
 
 def seed_badges(connection):
@@ -191,4 +247,23 @@ def seed_badges(connection):
         connection.execute(
             "INSERT OR IGNORE INTO badges (code, label, description) VALUES (?, ?, ?)",
             (code, label, description),
+        )
+
+
+def seed_templates(connection):
+    templates = (
+        ("foster_care", "contact", "Umgangskontakt dokumentieren", "Wer war beteiligt? Beginn/Ende? Übergabe? Verhalten davor und danach?"),
+        ("foster_care", "medical", "Medizinischer Termin", "Anlass, Diagnose/Empfehlung, Unterlagen, nächste Schritte."),
+        ("foster_care", "crisis", "Krise oder Schutzereignis", "Auslöser, Verlauf, Maßnahmen, Zeugen, Information an Stellen."),
+        ("foster_care", "youth_office", "Jugendamt / Hilfeplanung", "Teilnehmende, Zusagen, Fristen, offene Punkte."),
+        ("foster_care", "behavior", "Beobachtung", "Fakt, Beobachtung, Einschätzung und Maßnahme getrennt notieren."),
+    )
+
+    for domain, event_type, title, prompt in templates:
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO event_templates (domain, event_type, title, prompt)
+            VALUES (?, ?, ?, ?)
+            """,
+            (domain, event_type, title, prompt),
         )

@@ -14,9 +14,11 @@ from .config import (
     AUDIT_HASH_FIELDS,
     CASE_HASH_FIELDS,
     CASE_ROLES,
+    FOSTER_EVENT_TYPES,
     MAX_FIELD_LENGTH,
     ORG_PERMISSIONS,
     ORG_ROLES,
+    PRIORITIES,
     ORGANIZATION_HASH_FIELDS,
     SYSTEM_ROLES,
     WEB_HASH_FIELDS,
@@ -47,7 +49,13 @@ def ensure_migrated_defaults(connection):
     if org_count == 0:
         first_user = connection.execute("SELECT * FROM users ORDER BY id LIMIT 1").fetchone()
         created_by = first_user["username"] if first_user else "system"
-        org_id = create_organization(connection, "Default Organization", "Migrated organization.", created_by)
+        org_id = create_organization(
+            connection,
+            "Default Organization",
+            "Migrated organization.",
+            created_by,
+            "foster_care",
+        )
     else:
         org_id = connection.execute("SELECT id FROM organizations ORDER BY id LIMIT 1").fetchone()["id"]
 
@@ -61,6 +69,7 @@ def ensure_migrated_defaults(connection):
         for admin in connection.execute("SELECT * FROM users WHERE system_role = 'system_admin' AND active = 1"):
             grant_case_access(connection, case_row["id"], admin["id"], "owner", "system")
 
+    rebuild_all_organization_hashes(connection)
     rebuild_all_case_hashes(connection)
     rebuild_all_event_chains(connection)
     connection.commit()
@@ -173,10 +182,11 @@ def calculate_audit_hash(entry, previous_hash):
     ).hexdigest()
 
 
-def create_organization(connection, name, description, created_by):
+def create_organization(connection, name, description, created_by, domain="foster_care"):
     created_at, created_at_unix = timestamp_pair()
     organization = {
         "name": clean_field(name, 200) or "Untitled Organization",
+        "domain": domain if domain in {"foster_care", "general", "vehicle"} else "general",
         "description": clean_field(description, 2_000),
         "created_by": created_by,
         "created_at": created_at,
@@ -186,11 +196,12 @@ def create_organization(connection, name, description, created_by):
     signature = sign_payload({"organization_hash": org_hash})
     cursor = connection.execute(
         """
-        INSERT INTO organizations (name, description, created_by, created_at, created_at_unix, hash, signature)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO organizations (name, domain, description, created_by, created_at, created_at_unix, hash, signature)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             organization["name"],
+            organization["domain"],
             organization["description"],
             organization["created_by"],
             organization["created_at"],
@@ -266,12 +277,12 @@ def get_accessible_organization(connection, user, organization_id):
     return organizations[0] if organizations else None
 
 
-def create_case(connection, organization_id, title, description, created_by):
+def create_case(connection, organization_id, form, created_by):
     created_at, created_at_unix = timestamp_pair()
     case_record = {
         "organization_id": organization_id,
-        "title": clean_field(title, 240) or "Untitled Case",
-        "description": clean_field(description, 2_000),
+        "title": clean_field(form.get("title", ""), 240) or "Untitled Case",
+        "description": clean_field(form.get("description", ""), 2_000),
         "created_by": created_by,
         "created_at": created_at,
         "created_at_unix": created_at_unix,
@@ -281,14 +292,26 @@ def create_case(connection, organization_id, title, description, created_by):
     cursor = connection.execute(
         """
         INSERT INTO cases (
-            organization_id, title, description, created_by, created_at, created_at_unix, hash, signature
+            organization_id, title, description, subject_name, subject_identifier,
+            subject_birthdate, agency, case_worker, guardian, court_reference,
+            school_or_daycare, medical_contacts, created_by, created_at,
+            created_at_unix, hash, signature
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             case_record["organization_id"],
             case_record["title"],
             case_record["description"],
+            clean_field(form.get("subject_name", ""), 200),
+            clean_field(form.get("subject_identifier", ""), 120),
+            clean_field(form.get("subject_birthdate", ""), 40),
+            clean_field(form.get("agency", ""), 240),
+            clean_field(form.get("case_worker", ""), 240),
+            clean_field(form.get("guardian", ""), 240),
+            clean_field(form.get("court_reference", ""), 160),
+            clean_field(form.get("school_or_daycare", ""), 240),
+            clean_field(form.get("medical_contacts", ""), 1_000),
             case_record["created_by"],
             case_record["created_at"],
             case_record["created_at_unix"],
@@ -440,6 +463,8 @@ def add_event(connection, form, user, organization_id, case_id):
     event = {
         "organization_id": organization_id,
         "case_id": case_id,
+        "event_type": form.get("event_type", "general") if form.get("event_type", "general") in FOSTER_EVENT_TYPES else "general",
+        "priority": form.get("priority", "normal") if form.get("priority", "normal") in PRIORITIES else "normal",
         "schema_version": SCHEMA_VERSION,
         "sequence": sequence,
         "timestamp": timestamp,
@@ -449,6 +474,11 @@ def add_event(connection, form, user, organization_id, case_id):
         "title": clean_field(form.get("title", ""), 240),
         "category": clean_field(form.get("category", "general"), 80) or "general",
         "people": clean_field(form.get("people", ""), 500),
+        "location": clean_field(form.get("location", ""), 240),
+        "quote": clean_field(form.get("quote", ""), 2_000),
+        "observation": clean_field(form.get("observation", ""), 4_000),
+        "assessment": clean_field(form.get("assessment", ""), 4_000),
+        "action_taken": clean_field(form.get("action_taken", ""), 4_000),
         "note": clean_field(form.get("note", ""), 10_000),
         "recorded_by": user["username"],
     }
@@ -460,15 +490,18 @@ def add_event(connection, form, user, organization_id, case_id):
     connection.execute(
         """
         INSERT INTO events (
-            organization_id, case_id, schema_version, sequence, timestamp, timestamp_unix,
-            recorded_at, recorded_at_unix, title, category, people, note, recorded_by,
-            previous_hash, hash, signature
+            organization_id, case_id, event_type, priority, schema_version, sequence,
+            timestamp, timestamp_unix, recorded_at, recorded_at_unix, title, category,
+            people, location, quote, observation, assessment, action_taken, note,
+            recorded_by, previous_hash, hash, signature
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             event["organization_id"],
             event["case_id"],
+            event["event_type"],
+            event["priority"],
             event["schema_version"],
             event["sequence"],
             event["timestamp"],
@@ -478,6 +511,11 @@ def add_event(connection, form, user, organization_id, case_id):
             event["title"],
             event["category"],
             event["people"],
+            event["location"],
+            event["quote"],
+            event["observation"],
+            event["assessment"],
+            event["action_taken"],
             event["note"],
             event["recorded_by"],
             previous_hash,
@@ -486,6 +524,44 @@ def add_event(connection, form, user, organization_id, case_id):
         ),
     )
     append_audit(connection, user["username"], "event.add", "event", event_hash, event["title"])
+    event_id = connection.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+    add_attachment_metadata(connection, event_id, form, user["username"])
+
+
+def add_attachment_metadata(connection, event_id, form, username):
+    filename = clean_field(form.get("attachment_name", ""), 260)
+    attachment_hash = clean_field(form.get("attachment_sha256", ""), 64).lower()
+
+    if not filename and not attachment_hash:
+        return
+
+    if len(attachment_hash) != 64 or any(char not in "0123456789abcdef" for char in attachment_hash):
+        raise ValueError("Attachment SHA-256 must be a 64 character hex value.")
+
+    try:
+        size_bytes = int(form.get("attachment_size", "0") or "0")
+    except ValueError:
+        size_bytes = 0
+
+    added_at, added_at_unix = timestamp_pair()
+    connection.execute(
+        """
+        INSERT INTO attachments (
+            event_id, filename, description, sha256, size_bytes, added_at, added_at_unix, added_by
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            event_id,
+            filename,
+            clean_field(form.get("attachment_description", ""), 1_000),
+            attachment_hash,
+            size_bytes,
+            added_at,
+            added_at_unix,
+            username,
+        ),
+    )
 
 
 def rebuild_all_case_hashes(connection):
@@ -496,6 +572,17 @@ def rebuild_all_case_hashes(connection):
         connection.execute(
             "UPDATE cases SET hash = ?, signature = ? WHERE id = ?",
             (case_hash, signature, case_record["id"]),
+        )
+
+
+def rebuild_all_organization_hashes(connection):
+    for row in connection.execute("SELECT * FROM organizations ORDER BY id"):
+        organization = dict(row)
+        org_hash = calculate_organization_hash(organization)
+        signature = sign_payload({"organization_hash": org_hash})
+        connection.execute(
+            "UPDATE organizations SET hash = ?, signature = ? WHERE id = ?",
+            (org_hash, signature, organization["id"]),
         )
 
 

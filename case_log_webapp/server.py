@@ -36,10 +36,13 @@ from .models import (
 from .views import (
     case_role_options,
     csrf_input,
+    domain_options,
     esc,
+    event_type_options,
     login_page,
     org_role_options,
     page,
+    priority_options,
     setup_page,
 )
 
@@ -60,6 +63,9 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             "X-Frame-Options": "DENY",
         }
 
+    def current_theme(self):
+        return "dark" if "theme=dark" in (self.headers.get("Cookie") or "") else "light"
+
     def send_html(self, status, body, headers=None):
         encoded = body.encode("utf-8")
         self.send_response(status)
@@ -78,7 +84,11 @@ class CaseLogHandler(BaseHTTPRequestHandler):
         status = HTTPStatus(code)
         self.send_html(
             status,
-            page(status.phrase, f"<div class='panel'><h1>{status.phrase}</h1><p class='bad'>{esc(message or status.description)}</p></div>"),
+            page(
+                status.phrase,
+                f"<div class='panel'><h1>{status.phrase}</h1><p class='bad'>{esc(message or status.description)}</p></div>",
+                theme=self.current_theme(),
+            ),
         )
 
     def redirect(self, location, headers=None):
@@ -180,6 +190,14 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             self.redirect(
                 "/login",
                 {"Set-Cookie": f"{SESSION_COOKIE}=; Max-Age=0; HttpOnly; SameSite=Strict; Path=/"},
+            )
+            return
+
+        if path == "/theme":
+            theme = "dark" if self.query_int("dark") else "light"
+            self.redirect(
+                self.headers.get("Referer") or "/",
+                {"Set-Cookie": f"theme={theme}; SameSite=Strict; Path=/; Max-Age=31536000"},
             )
             return
 
@@ -304,7 +322,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             orgs = list_accessible_organizations(connection, user)
 
         rows = "".join(
-            f"<tr><td><a href='/cases?org_id={org['id']}'>{esc(org['name'])}</a></td><td>{esc(org['description'])}</td><td>{esc(org['created_by'])}</td><td><code>{esc(org['hash'])}</code></td></tr>"
+            f"<tr><td><a href='/cases?org_id={org['id']}'>{esc(org['name'])}</a></td><td>{esc(org['domain'])}</td><td>{esc(org['description'])}</td><td>{esc(org['created_by'])}</td><td><code>{esc(org['hash'])}</code></td></tr>"
             for org in orgs
         )
         create_form = ""
@@ -316,6 +334,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
               <form method="post" action="/organizations">
                 {csrf_input(user)}
                 <label>Name<input name="name" required></label>
+                <label>Bereich<select name="domain">{domain_options('foster_care')}</select></label>
                 <label>Description<textarea name="description"></textarea></label>
                 <button type="submit">Create organization</button>
               </form>
@@ -325,11 +344,11 @@ class CaseLogHandler(BaseHTTPRequestHandler):
         body = f"""
         <h1>Organizations</h1>
         <div class="split">
-          <section><table><thead><tr><th>Name</th><th>Description</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='4'>No organizations.</td></tr>"}</tbody></table></section>
+          <section><table><thead><tr><th>Name</th><th>Bereich</th><th>Description</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'>No organizations.</td></tr>"}</tbody></table></section>
           {create_form}
         </div>
         """
-        self.send_html(HTTPStatus.OK, page("Organizations", body, user))
+        self.send_html(HTTPStatus.OK, page("Organizations", body, user, self.current_theme()))
 
     def organization_post(self, user, form):
         if user.get("system_role") != "system_admin":
@@ -337,7 +356,13 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             return
 
         with connect_db() as connection:
-            org_id = create_organization(connection, form.get("name", ""), form.get("description", ""), user["username"])
+            org_id = create_organization(
+                connection,
+                form.get("name", ""),
+                form.get("description", ""),
+                user["username"],
+                form.get("domain", "foster_care"),
+            )
             grant_organization_access(connection, org_id, user["user_id"], "owner", user["username"])
             append_audit(connection, user["username"], "organization.create", "organization", str(org_id), form.get("name", ""))
             connection.commit()
@@ -356,7 +381,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             can_manage = has_org_permission(connection, user, org["id"], "cases.manage")
 
         rows = "".join(
-            f"<tr><td><a href='/?org_id={org['id']}&case_id={case['id']}'>{esc(case['title'])}</a></td><td>{esc(case['description'])}</td><td>{esc(case['created_by'])}</td><td><code>{esc(case['hash'])}</code></td></tr>"
+            f"<tr><td><a href='/?org_id={org['id']}&case_id={case['id']}'>{esc(case['title'])}</a><br><span class='muted'>{esc(case['subject_name'])}</span></td><td>{esc(case['description'])}</td><td>{esc(case['agency'])}<br><span class='muted'>{esc(case['case_worker'])}</span></td><td>{esc(case['created_by'])}</td><td><code>{esc(case['hash'])}</code></td></tr>"
             for case in cases
         )
         form_html = ""
@@ -370,6 +395,15 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 <input type="hidden" name="organization_id" value="{org['id']}">
                 <label>Title<input name="title" required></label>
                 <label>Description<textarea name="description"></textarea></label>
+                <label>Name / Kürzel des Kindes<input name="subject_name"></label>
+                <label>Geburtsdatum<input name="subject_birthdate" placeholder="YYYY-MM-DD"></label>
+                <label>Aktenzeichen / Fallnummer<input name="subject_identifier"></label>
+                <label>Jugendamt<input name="agency"></label>
+                <label>Sachbearbeitung<input name="case_worker"></label>
+                <label>Vormund / Ergänzungspflege<input name="guardian"></label>
+                <label>Gericht / Aktenzeichen<input name="court_reference"></label>
+                <label>Schule / Kita<input name="school_or_daycare"></label>
+                <label>Ärzte / Therapie<textarea name="medical_contacts"></textarea></label>
                 <button type="submit">Create case</button>
               </form>
             </section>
@@ -378,11 +412,11 @@ class CaseLogHandler(BaseHTTPRequestHandler):
         body = f"""
         <h1>{esc(org['name'])} Cases</h1>
         <div class="split">
-          <section><table><thead><tr><th>Case</th><th>Description</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='4'>No cases.</td></tr>"}</tbody></table></section>
+          <section><table><thead><tr><th>Case</th><th>Description</th><th>Jugendamt</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'>No cases.</td></tr>"}</tbody></table></section>
           {form_html}
         </div>
         """
-        self.send_html(HTTPStatus.OK, page("Cases", body, user))
+        self.send_html(HTTPStatus.OK, page("Cases", body, user, self.current_theme()))
 
     def case_post(self, user, form):
         organization_id = int(form.get("organization_id", "0"))
@@ -392,7 +426,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 self.send_error(HTTPStatus.FORBIDDEN)
                 return
 
-            case_id = create_case(connection, organization_id, form.get("title", ""), form.get("description", ""), user["username"])
+            case_id = create_case(connection, organization_id, form, user["username"])
             grant_case_access(connection, case_id, user["user_id"], "owner", user["username"])
             award_badge(connection, user["user_id"], "first_case", user["username"])
             append_audit(connection, user["username"], "case.create", "case", str(case_id), form.get("title", ""))
@@ -418,10 +452,20 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 "SELECT * FROM events WHERE case_id = ? ORDER BY sequence",
                 (case["id"],),
             ).fetchall()
+            attachment_counts = {
+                row["event_id"]: row["count"]
+                for row in connection.execute(
+                    """
+                    SELECT event_id, COUNT(*) AS count
+                    FROM attachments
+                    GROUP BY event_id
+                    """
+                )
+            }
             can_write = has_org_permission(connection, user, org["id"], "cases.write")
 
         rows = "".join(
-            f"<tr><td>#{event['sequence']}</td><td>{esc(event['timestamp'])}<br><span class='muted'>{event['timestamp_unix']}</span></td><td>{esc(event['category'])}</td><td>{esc(event['title'])}<br><span class='muted'>{esc(event['people'])}</span></td><td>{esc(event['recorded_by'])}</td><td><code>{esc(event['hash'])}</code></td></tr>"
+            f"<tr><td>#{event['sequence']}</td><td>{esc(event['timestamp'])}<br><span class='muted'>{event['timestamp_unix']}</span></td><td>{esc(event['event_type'])}<br><span class='muted'>{esc(event['priority'])}</span></td><td>{esc(event['title'])}<br><span class='muted'>{esc(event['people'])}</span><br><span class='muted'>Anhänge: {attachment_counts.get(event['id'], 0)}</span></td><td>{esc(event['recorded_by'])}</td><td><code>{esc(event['hash'])}</code></td></tr>"
             for event in events
         )
         form_html = ""
@@ -435,10 +479,22 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 <input type="hidden" name="organization_id" value="{org['id']}">
                 <input type="hidden" name="case_id" value="{case['id']}">
                 <label>Title<input name="title" required></label>
+                <label>Ereignistyp<select name="event_type">{event_type_options('general')}</select></label>
+                <label>Priorität<select name="priority">{priority_options('normal')}</select></label>
                 <label>Category<input name="category" value="general"></label>
                 <label>Event time<input name="timestamp" placeholder="2026-05-19T20:30:00+02:00"></label>
                 <label>People<input name="people"></label>
+                <label>Ort<input name="location"></label>
+                <label>Zitat des Kindes / wörtliche Aussage<textarea name="quote"></textarea></label>
+                <label>Faktische Beobachtung<textarea name="observation"></textarea></label>
+                <label>Einschätzung<textarea name="assessment"></textarea></label>
+                <label>Maßnahme / nächster Schritt<textarea name="action_taken"></textarea></label>
                 <label>Note<textarea name="note" required></textarea></label>
+                <h2>Anhang mit Hash</h2>
+                <label>Dateiname<input name="attachment_name"></label>
+                <label>SHA-256<input name="attachment_sha256" maxlength="64"></label>
+                <label>Größe in Bytes<input name="attachment_size" inputmode="numeric"></label>
+                <label>Beschreibung<textarea name="attachment_description"></textarea></label>
                 <button type="submit">Add entry</button>
               </form>
             </section>
@@ -448,11 +504,11 @@ class CaseLogHandler(BaseHTTPRequestHandler):
         <h1>{esc(case['title'])}</h1>
         <p class="muted">{esc(org['name'])} / {esc(case['description'])}</p>
         <div class="split">
-          <section><table><thead><tr><th>Seq</th><th>Time</th><th>Category</th><th>Entry</th><th>User</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='6'>No entries.</td></tr>"}</tbody></table></section>
+          <section><table><thead><tr><th>Seq</th><th>Time</th><th>Type</th><th>Entry</th><th>User</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='6'>No entries.</td></tr>"}</tbody></table></section>
           {form_html}
         </div>
         """
-        self.send_html(HTTPStatus.OK, page("Entries", body, user))
+        self.send_html(HTTPStatus.OK, page("Entries", body, user, self.current_theme()))
 
     def event_post(self, user, form):
         organization_id = int(form.get("organization_id", "0"))
@@ -465,6 +521,9 @@ class CaseLogHandler(BaseHTTPRequestHandler):
                 connection.commit()
             except PermissionError:
                 self.send_error(HTTPStatus.FORBIDDEN)
+                return
+            except ValueError as error:
+                self.send_error(HTTPStatus.BAD_REQUEST, str(error))
                 return
 
         self.redirect(f"/?org_id={organization_id}&case_id={case_id}")
@@ -532,7 +591,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
           </section>
         </div>
         """
-        self.send_html(HTTPStatus.OK, page("Users", body, user))
+        self.send_html(HTTPStatus.OK, page("Users", body, user, self.current_theme()))
 
     def user_post(self, user, form):
         organization_id = int(form.get("organization_id", "0"))
@@ -608,7 +667,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
           </section>
         </div>
         """
-        self.send_html(HTTPStatus.OK, page("Profile", body, user))
+        self.send_html(HTTPStatus.OK, page("Profile", body, user, self.current_theme()))
 
     def profile_post(self, user, form):
         with connect_db() as connection:
@@ -653,7 +712,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
           <p class="muted">For court-facing use, export or record this root hash and submit it to a qualified external timestamp process outside this local app.</p>
         </div>
         """
-        self.send_html(HTTPStatus.OK, page("Verify", body, user))
+        self.send_html(HTTPStatus.OK, page("Verify", body, user, self.current_theme()))
 
     def audit_page(self, user):
         with connect_db() as connection:
@@ -670,7 +729,7 @@ class CaseLogHandler(BaseHTTPRequestHandler):
           <tbody>{table_rows or "<tr><td colspan='6'>No audit entries yet.</td></tr>"}</tbody>
         </table>
         """
-        self.send_html(HTTPStatus.OK, page("Audit", body, user))
+        self.send_html(HTTPStatus.OK, page("Audit", body, user, self.current_theme()))
 
 
 def serve(host, port):

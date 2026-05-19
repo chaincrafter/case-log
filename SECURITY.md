@@ -35,6 +35,8 @@ For sensitive use:
 - Keep the SQLite database and HMAC key out of Git
 - Back up `data/events.json`, `data/*.sqlite3`, exports and the HMAC key
 - Preserve generated evidence reports and case root hashes
+- Store attachment files in a controlled location and enter their SHA-256 hashes
+  in the attachment metadata
 - Verify regularly with `python case_log.py verify --require-signatures`
 
 ## Built-In Protections
@@ -45,6 +47,7 @@ For sensitive use:
 - HMAC-signed session cookies
 - Organization-level role management
 - Per-case access control through case memberships
+- Attachment metadata with SHA-256 hashes
 - CSRF token checks for event creation
 - Login rate limiting
 - Append-only event and audit records

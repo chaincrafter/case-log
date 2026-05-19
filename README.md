@@ -4,8 +4,8 @@
 
 It supports append-only chronological event documentation, local integrity
 verification, HMAC signatures, evidence reports and a local multi-user SQLite web
-interface with organizations, roles, user profiles, badges and a dark
-terminal-style design.
+interface with organizations, domains, roles, user profiles, badges and a
+government-friendly light/dark design.
 
 ## Scope
 
@@ -30,7 +30,11 @@ a qualified external timestamp/signature process.
 - Run a local multi-user SQLite web interface
 - First-run web setup for the first organization and admin PIN
 - Manage multiple organizations
+- Assign each organization to a domain such as foster care, general chronology or vehicle chronology
 - Create multiple cases with separate entries
+- Create foster-care case profiles with child/case metadata
+- Record structured foster-care event fields
+- Track attachment metadata with SHA-256 hashes
 - Grant users organization and case roles
 - Maintain user profiles with avatar URLs, titles and badges
 - Track web actions in an HMAC-signed audit log
@@ -189,6 +193,23 @@ hash. Changing, removing or reordering entries breaks the chain.
 The `signature` value is an HMAC-SHA-256 signature over the stored hash-chain
 values. The signing key is read from `CASE_LOG_HMAC_KEY` or from
 `data/.case-log-hmac-key`.
+
+## Foster Care Domain
+
+Organizations can be created with a domain. The first implemented domain is
+`foster_care`. It adds:
+
+- child or case subject metadata
+- youth office, case worker, guardian and court reference fields
+- school/daycare and medical contact fields
+- foster-care event types such as contact, youth office, medical, school,
+  behavior, crisis, development, handover and court
+- priority values: `normal`, `important`, `critical`, `reportable`
+- separated fields for quote, factual observation, assessment and action taken
+- attachment metadata with filename, description, size and SHA-256 hash
+
+The domain structure is intentionally generic enough to add other domains later,
+for example `vehicle`.
 
 ## Evidence Workflow
 

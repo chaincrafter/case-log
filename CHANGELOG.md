@@ -21,7 +21,12 @@ All notable changes to this project are documented here.
 - Modular `case_log_webapp/` package for web server, database, models, crypto and views
 - First-run browser setup for the first organization and system admin PIN
 - Organization management with organization-level roles
+- Organization domains, starting with `foster_care`
+- Foster-care case profile fields for subject, youth office, guardian, court, school and medical contacts
+- Foster-care event types, priorities and structured observation fields
+- Attachment metadata with SHA-256 hashes
 - User profiles with display names, avatar URLs, titles, bios and badges
+- Government-friendly light mode with optional dark terminal mode
 - 4-digit PIN login support for the web interface
 - `grant-org`, `grant-case` and `set-pin` web CLI commands
 - PBKDF2-HMAC-SHA-256 password hashing for web users

@@ -14,6 +14,26 @@ LOGIN_ATTEMPTS = {}
 SYSTEM_ROLES = ("system_admin", "user")
 ORG_ROLES = ("owner", "admin", "case_manager", "analyst", "viewer")
 CASE_ROLES = ("owner", "member", "viewer")
+ORG_DOMAINS = {
+    "foster_care": "Pflege / Jugendhilfe",
+    "general": "Allgemeine Chronologie",
+    "vehicle": "Fahrzeug / Objektchronologie",
+}
+FOSTER_EVENT_TYPES = {
+    "contact": "Umgangskontakt",
+    "youth_office": "Jugendamt / Hilfeplanung",
+    "medical": "Arzt / Gesundheit",
+    "therapy": "Therapie / Beratung",
+    "school": "Schule / Kita",
+    "behavior": "Verhalten / Beobachtung",
+    "crisis": "Krise / Schutz",
+    "development": "Entwicklungsschritt",
+    "message": "Nachricht / Telefonat",
+    "handover": "Übergabe",
+    "court": "Gericht / Recht",
+    "general": "Allgemein",
+}
+PRIORITIES = ("normal", "important", "critical", "reportable")
 
 ORG_PERMISSIONS = {
     "owner": {"org.manage", "users.manage", "cases.manage", "cases.write", "cases.read"},
@@ -26,6 +46,8 @@ ORG_PERMISSIONS = {
 WEB_HASH_FIELDS = (
     "organization_id",
     "case_id",
+    "event_type",
+    "priority",
     "schema_version",
     "sequence",
     "timestamp",
@@ -35,6 +57,11 @@ WEB_HASH_FIELDS = (
     "title",
     "category",
     "people",
+    "location",
+    "quote",
+    "observation",
+    "assessment",
+    "action_taken",
     "note",
     "recorded_by",
 )
@@ -50,6 +77,7 @@ CASE_HASH_FIELDS = (
 
 ORGANIZATION_HASH_FIELDS = (
     "name",
+    "domain",
     "description",
     "created_by",
     "created_at",

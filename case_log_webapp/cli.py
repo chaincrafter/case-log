@@ -150,6 +150,7 @@ def main():
 
     init_parser = subparsers.add_parser("init-db", help="Initialize the SQLite database")
     init_parser.add_argument("--organization", default="Default Organization")
+    init_parser.add_argument("--domain", default="foster_care", choices=("foster_care", "general", "vehicle"))
     init_parser.add_argument("--admin-user", default="admin")
     init_parser.add_argument("--admin-pin", default="")
     init_parser.set_defaults(func=command_init_db)
