@@ -87,3 +87,7 @@ examples/example_chronology.md
 ## License
 
 MIT
+
+## Status
+
+Early public version. The tool is intentionally small and dependency-free.

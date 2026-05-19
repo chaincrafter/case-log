@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 chronology.md
+.env
+.DS_Store
+Thumbs.db
