@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "timestamp": "2026-05-19T06:25:12",
+    "title": "Initial consultation",
+    "category": "administrative",
+    "people": "Case worker, applicant",
+    "note": "Basic facts and next steps were documented."
+  },
+  {
+    "timestamp": "2026-05-19T06:25:20",
+    "title": "Medical appointment",
+    "category": "medical",
+    "people": "Doctor, client",
+    "note": "Current condition was documented for the chronology."
+  },
+  {
+    "timestamp": "2026-05-19T06:25:37",
+    "title": "Document review",
+    "category": "legal",
+    "people": "Applicant",
+    "note": "Relevant documents were reviewed and added to the timeline."
+  }
+]
