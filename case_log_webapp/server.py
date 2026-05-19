@@ -330,15 +330,16 @@ class CaseLogHandler(BaseHTTPRequestHandler):
         if user.get("system_role") == "system_admin":
             create_form = f"""
             <section class="panel">
-              <h2>Create Organization</h2>
-              <form method="post" action="/organizations">
+              <h2>Organisation anlegen</h2>
+              <p class="helper">Eine Organisation bündelt Fälle, Teamzugriff und Prüfnachweise.</p>
+              <form id="create-organization" method="post" action="/organizations">
                 {csrf_input(user)}
                 <div class="form-grid">
                   <label>Name<input name="name" required></label>
                   <label>Bereich<select name="domain">{domain_options('foster_care')}</select></label>
-                  <label class="wide">Description<textarea name="description"></textarea></label>
+                  <label class="wide">Kurzbeschreibung<textarea name="description"></textarea></label>
                 </div>
-                <button type="submit">Create organization</button>
+                <button type="submit">Organisation speichern</button>
               </form>
             </section>
             """
@@ -350,10 +351,16 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             <h1>Organizations</h1>
             <p class="muted">Choose the working area for cases, users and evidence chains.</p>
           </div>
+          <div class="quick-actions"><a class="button" href="#create-organization">Organisation anlegen</a></div>
+        </div>
+        <div class="summary-strip">
+          <div class="summary-item"><strong>{len(orgs)}</strong><span>Organisationen</span></div>
+          <div class="summary-item"><strong>{'Admin' if user.get('system_role') == 'system_admin' else 'Team'}</strong><span>Aktuelle Rolle</span></div>
+          <div class="summary-item"><strong>HMAC</strong><span>Signierte Nachweise</span></div>
         </div>
         <div class="split">
           <section class="table-panel">
-            <div class="table-panel-header"><div><h2>Available organizations</h2><p>{len(orgs)} organization(s)</p></div></div>
+            <div class="table-panel-header"><div><h2>Organisationen</h2><p>{len(orgs)} Arbeitsbereich(e)</p></div></div>
             <div class="table-wrap"><table><thead><tr><th>Name</th><th>Bereich</th><th>Description</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'><div class='empty-state'>No organizations.</div></td></tr>"}</tbody></table></div>
           </section>
           {create_form}
@@ -399,25 +406,36 @@ class CaseLogHandler(BaseHTTPRequestHandler):
 
         if can_manage:
             form_html = f"""
-            <section class="panel">
-              <h2>Create Case</h2>
-              <form method="post" action="/cases">
+            <section class="panel primary-task">
+              <h2>Kind / Fall anlegen</h2>
+              <p class="helper">Nur Name oder Kürzel reicht für den Start. Alles Weitere kann später ergänzt werden.</p>
+              <form id="create-case" method="post" action="/cases">
                 {csrf_input(user)}
                 <input type="hidden" name="organization_id" value="{org['id']}">
                 <div class="form-grid">
-                <label>Title<input name="title" required></label>
-                <label class="wide">Description<textarea name="description"></textarea></label>
-                <label>Name / Kürzel des Kindes<input name="subject_name"></label>
-                <label>Geburtsdatum<input name="subject_birthdate" placeholder="YYYY-MM-DD"></label>
-                <label>Aktenzeichen / Fallnummer<input name="subject_identifier"></label>
-                <label>Jugendamt<input name="agency"></label>
-                <label>Sachbearbeitung<input name="case_worker"></label>
-                <label>Vormund / Ergänzungspflege<input name="guardian"></label>
-                <label>Gericht / Aktenzeichen<input name="court_reference"></label>
-                <label>Schule / Kita<input name="school_or_daycare"></label>
-                <label class="wide">Ärzte / Therapie<textarea name="medical_contacts"></textarea></label>
+                  <label>Name / Kürzel des Kindes<input name="subject_name" required></label>
+                  <label>Fallname<input name="title" placeholder="optional, sonst wie Name / Kürzel"></label>
                 </div>
-                <button type="submit">Create case</button>
+                <details class="form-section">
+                  <summary>Optionale Details</summary>
+                  <div class="form-section-body form-grid">
+                    <label>Geburtsdatum<input name="subject_birthdate" placeholder="YYYY-MM-DD"></label>
+                    <label class="wide">Kurzbeschreibung<textarea name="description"></textarea></label>
+                    <label>Aktenzeichen / Fallnummer<input name="subject_identifier"></label>
+                    <label>Jugendamt<input name="agency"></label>
+                    <label>Sachbearbeitung<input name="case_worker"></label>
+                    <label>Vormund / Ergänzungspflege<input name="guardian"></label>
+                    <label>Gericht / Aktenzeichen<input name="court_reference"></label>
+                    <label>Schule / Kita<input name="school_or_daycare"></label>
+                  </div>
+                </details>
+                <details class="form-section">
+                  <summary>Medizin & Therapie</summary>
+                  <div class="form-section-body">
+                    <label>Ärzte / Therapie<textarea name="medical_contacts"></textarea></label>
+                  </div>
+                </details>
+                <button type="submit">Jetzt starten</button>
               </form>
             </section>
             """
@@ -429,19 +447,27 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             <h1>{esc(org['name'])}</h1>
             <p class="muted">Manage case files and open the chronology for documentation.</p>
           </div>
+          <div class="quick-actions"><a class="button" href="#create-case">Fall anlegen</a></div>
         </div>
-        <div class="split">
+        <div class="summary-strip">
+          <div class="summary-item"><strong>{len(cases)}</strong><span>Fälle</span></div>
+          <div class="summary-item"><strong>{esc(org['domain'])}</strong><span>Bereich</span></div>
+          <div class="summary-item"><strong>{'Ja' if can_manage else 'Nein'}</strong><span>Fallverwaltung</span></div>
+        </div>
+        <div class="split action-first">
+          {form_html}
           <section class="table-panel">
-            <div class="table-panel-header"><div><h2>Case files</h2><p>{len(cases)} case(s) in this organization</p></div></div>
+            <div class="table-panel-header"><div><h2>Fallakten</h2><p>{len(cases)} Fall/Fälle in dieser Organisation</p></div></div>
             <div class="table-wrap"><table><thead><tr><th>Case</th><th>Description</th><th>Jugendamt</th><th>Created by</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='5'><div class='empty-state'>No cases yet.</div></td></tr>"}</tbody></table></div>
           </section>
-          {form_html}
         </div>
         """
         self.send_html(HTTPStatus.OK, page("Cases", body, user, self.current_theme()))
 
     def case_post(self, user, form):
         organization_id = int(form.get("organization_id", "0"))
+        if not form.get("title", "").strip():
+            form["title"] = form.get("subject_name", "").strip() or "Neuer Fall"
 
         with connect_db() as connection:
             if not has_org_permission(connection, user, organization_id, "cases.manage"):
@@ -490,39 +516,75 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             f"<tr><td>#{event['sequence']}</td><td>{esc(event['timestamp'])}<br><span class='muted'>{event['timestamp_unix']}</span></td><td>{esc(event['event_type'])}<br><span class='muted'>{esc(event['priority'])}</span></td><td>{esc(event['title'])}<br><span class='muted'>{esc(event['people'])}</span><br><span class='muted'>Anhänge: {attachment_counts.get(event['id'], 0)}</span></td><td>{esc(event['recorded_by'])}</td><td><code>{esc(event['hash'])}</code></td></tr>"
             for event in events
         )
+        event_cards = "".join(
+            f"<article class='event-card'><div><strong>{esc(event['title'])}</strong><span>{esc(event['timestamp'])}</span></div><p>{esc(event['note'])}</p><small>{esc(event['event_type'])} · {esc(event['recorded_by'])}</small></article>"
+            for event in reversed(events[-6:])
+        )
         form_html = ""
+        quick_html = ""
 
         if can_write:
-            form_html = f"""
-            <section class="panel">
-              <h2>Add Entry</h2>
+            quick_html = f"""
+            <section class="quick-log panel">
+              <div>
+                <p class="eyebrow">Schnell dokumentieren</p>
+                <h2>Medikament gegeben</h2>
+                <p class="helper">Für Situationen wie "Nureflex 4 ml": vier Felder, speichern, fertig.</p>
+              </div>
               <form method="post" action="/events">
+                {csrf_input(user)}
+                <input type="hidden" name="quick_type" value="medication">
+                <input type="hidden" name="organization_id" value="{org['id']}">
+                <input type="hidden" name="case_id" value="{case['id']}">
+                <div class="quick-form">
+                  <label>Medikament<input name="medication_name" placeholder="Nureflex" required></label>
+                  <label>Dosis<input name="medication_dose" placeholder="4 ml" required></label>
+                  <label>Zeit<input name="timestamp" placeholder="jetzt"></label>
+                  <label>Grund / Notiz<input name="quick_note" placeholder="Fieber, Schmerzen, nach Plan ..."></label>
+                </div>
+                <button type="submit">Medikament speichern</button>
+              </form>
+            </section>
+            """
+            form_html = f"""
+            <section class="panel secondary-task">
+              <details class="form-section">
+                <summary>Ausführlichen Eintrag erfassen</summary>
+                <div class="form-section-body">
+              <p class="helper">Für längere Dokumentation mit Beobachtung, Einschätzung, Maßnahmen und Anhängen.</p>
+              <form id="add-entry" method="post" action="/events">
                 {csrf_input(user)}
                 <input type="hidden" name="organization_id" value="{org['id']}">
                 <input type="hidden" name="case_id" value="{case['id']}">
-                <div class="form-grid">
-                <label class="wide">Title<input name="title" required></label>
+                <details class="form-section" open>
+                  <summary>1. Was ist passiert?</summary>
+                  <div class="form-section-body form-grid">
+                <label class="wide">Titel<input name="title" required></label>
                 <label>Ereignistyp<select name="event_type">{event_type_options('general')}</select></label>
                 <label>Priorität<select name="priority">{priority_options('normal')}</select></label>
-                <label>Category<input name="category" value="general"></label>
-                <label>Event time<input name="timestamp" placeholder="2026-05-19T20:30:00+02:00"></label>
-                <label>People<input name="people"></label>
+                <label>Zeitpunkt<input name="timestamp" placeholder="2026-05-19T20:30:00+02:00"></label>
+                <label class="wide">Beteiligte Personen<input name="people"></label>
                 <label>Ort<input name="location"></label>
                 <label>Zitat des Kindes / wörtliche Aussage<textarea name="quote"></textarea></label>
                 <label>Faktische Beobachtung<textarea name="observation"></textarea></label>
                 <label>Einschätzung<textarea name="assessment"></textarea></label>
                 <label>Maßnahme / nächster Schritt<textarea name="action_taken"></textarea></label>
-                <label class="wide">Note<textarea name="note" required></textarea></label>
-                </div>
-                <h2>Anhang mit Hash</h2>
-                <div class="form-grid">
+                <label class="wide">Notiz<textarea name="note" required></textarea></label>
+                  </div>
+                </details>
+                <details class="form-section">
+                  <summary>4. Anhang mit Hash</summary>
+                  <div class="form-section-body form-grid">
                 <label>Dateiname<input name="attachment_name"></label>
                 <label>SHA-256<input name="attachment_sha256" maxlength="64"></label>
                 <label>Größe in Bytes<input name="attachment_size" inputmode="numeric"></label>
                 <label class="wide">Beschreibung<textarea name="attachment_description"></textarea></label>
-                </div>
-                <button type="submit">Add entry</button>
+                  </div>
+                </details>
+                <button type="submit">Eintrag speichern</button>
               </form>
+                </div>
+              </details>
             </section>
             """
 
@@ -533,10 +595,18 @@ class CaseLogHandler(BaseHTTPRequestHandler):
             <h1>{esc(case['title'])}</h1>
             <p class="muted">{esc(case['description'])}</p>
           </div>
+          <div class="quick-actions"><a class="button" href="#add-entry">Eintrag erfassen</a><a class="button secondary" href="/verify?org_id={org['id']}&case_id={case['id']}">Integrität prüfen</a></div>
         </div>
+        <div class="summary-strip">
+          <div class="summary-item"><strong>{len(events)}</strong><span>Einträge</span></div>
+          <div class="summary-item"><strong>{esc(case['subject_name'] or '-')}</strong><span>Kind / Kürzel</span></div>
+          <div class="summary-item"><strong>{'Ja' if can_write else 'Nein'}</strong><span>Schreibzugriff</span></div>
+        </div>
+        {quick_html}
+        <section class="event-list">{event_cards or "<div class='empty-state'>Noch keine Einträge. Nutze oben die Schnell-Doku.</div>"}</section>
         <div class="split">
-          <section class="table-panel">
-            <div class="table-panel-header"><div><h2>Chronology</h2><p>{len(events)} documented event(s)</p></div></div>
+          <section class="table-panel chronology-table">
+            <div class="table-panel-header"><div><h2>Chronologie</h2><p>{len(events)} dokumentierte(s) Ereignis(se)</p></div></div>
             <div class="table-wrap"><table><thead><tr><th>Seq</th><th>Time</th><th>Type</th><th>Entry</th><th>User</th><th>Hash</th></tr></thead><tbody>{rows or "<tr><td colspan='6'><div class='empty-state'>No entries yet.</div></td></tr>"}</tbody></table></div>
           </section>
           {form_html}
@@ -547,6 +617,22 @@ class CaseLogHandler(BaseHTTPRequestHandler):
     def event_post(self, user, form):
         organization_id = int(form.get("organization_id", "0"))
         case_id = int(form.get("case_id", "0"))
+
+        if form.get("quick_type") == "medication":
+            medication = clean_field(form.get("medication_name", ""), 120)
+            dose = clean_field(form.get("medication_dose", ""), 80)
+            quick_note = clean_field(form.get("quick_note", ""), 500)
+            note_parts = [f"Medikament: {medication}", f"Dosis: {dose}"]
+
+            if quick_note:
+                note_parts.append(f"Notiz: {quick_note}")
+
+            form["title"] = f"{medication} {dose}".strip()
+            form["event_type"] = "medical"
+            form["priority"] = "normal"
+            form["category"] = "medical"
+            form["note"] = "\n".join(note_parts)
+            form["observation"] = form["note"]
 
         with connect_db() as connection:
             try:
