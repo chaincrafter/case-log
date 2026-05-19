@@ -5,7 +5,8 @@
 It supports append-only chronological event documentation, local integrity
 verification, HMAC signatures, evidence reports and a local multi-user SQLite web
 interface with organizations, domains, roles, user profiles, badges and a
-government-friendly light/dark design.
+mobile-first foster-care workflow for quick documentation in everyday care
+situations.
 
 ## Scope
 
@@ -28,12 +29,15 @@ a qualified external timestamp/signature process.
 - Generate evidence reports with a case root hash
 - Export Markdown chronologies
 - Run a local multi-user SQLite web interface
+- Use a mobile-first web UI with compact bottom navigation
 - First-run web setup for the first organization and admin PIN
 - Manage multiple organizations
 - Assign each organization to a domain such as foster care, general chronology or vehicle chronology
 - Create multiple cases with separate entries
 - Create foster-care case profiles with child/case metadata
+- Quickly document common care events such as administered medication
 - Record structured foster-care event fields
+- Show recent case events as mobile-friendly cards
 - Track attachment metadata with SHA-256 hashes
 - Grant users organization and case roles
 - Maintain user profiles with avatar URLs, titles and badges
@@ -124,6 +128,24 @@ organizations. Organization owners/admins can manage users and cases inside
 their organization. Regular users only see organizations and cases they are
 assigned to.
 
+The web interface is designed for mobile-first use by foster parents and other
+caregivers. The main case screen prioritizes fast documentation over
+administration: recent events are shown as cards, the full integrity table stays
+available for review, and long forms are collapsed behind optional sections.
+
+For example, if medication was administered, a caregiver can open a case and use
+the quick medication form:
+
+```text
+Medication: Nureflex
+Dose: 4 ml
+Time: now or an explicit timestamp
+Reason / note: fever, pain, according to plan, etc.
+```
+
+The web app stores this as a normal append-only medical event with hash-chain
+integrity and HMAC signature data.
+
 Start the server and complete first-run setup in the browser:
 
 ```bash
@@ -204,6 +226,7 @@ Organizations can be created with a domain. The first implemented domain is
 - school/daycare and medical contact fields
 - foster-care event types such as contact, youth office, medical, school,
   behavior, crisis, development, handover and court
+- a quick medication workflow for documenting name, dose, time and reason
 - priority values: `normal`, `important`, `critical`, `reportable`
 - separated fields for quote, factual observation, assessment and action taken
 - attachment metadata with filename, description, size and SHA-256 hash
@@ -282,8 +305,9 @@ examples/example_chronology.md
 
 ## Roadmap
 
-- Attachments with file hashes
-- Case metadata
+- More quick-entry templates for fever, sleep, food/drink, contact visits,
+  injuries and authority communication
+- Attachment upload handling around the existing file-hash metadata
 - Export bundles
 - PDF export
 - Optional integration with qualified timestamp/signature providers
