@@ -318,4 +318,4 @@ MIT
 
 ## Status
 
-Early public version. The tool is intentionally small and dependency-free.
+MVP / local demo. Do not expose to the public internet. Do not use with real sensitive case data without HTTPS, stronger authentication, encryption at rest, backups and external qualified timestamping.
